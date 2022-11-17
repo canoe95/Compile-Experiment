@@ -11,7 +11,7 @@ gcc -o exam lex.yy.c
 ./exam
 
 bison -vtdy parser.y
-gcc -o parser lex.yy.c y.tab.c y.tab.h
+gcc -o parser lex.yy.c y.tab.c
 ~~~
 
 flex 实现词法分析器，见 lexer 文件夹，识别以下规则
