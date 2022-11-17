@@ -1,0 +1,289 @@
+%{
+#include <stdio.h>
+extern FILE* yyout;
+void yyerror(const char* msg) {}
+int yylex();
+%}
+
+%debug
+
+%locations
+
+%token STR // 字符串
+%token CHARACTER // 字符
+
+%token CONST // const
+%token INT // int
+%token CHAR // char
+%token VOID // void
+%token MAIN // main
+%token IF // if
+%token ELSE // else
+%token DO // do
+%token WHILE // while
+%token FOR // for
+%token SCAN // scanf
+%token PRINT // printf
+%token RETURN // return
+
+%token ID // 识别标识符
+%token NUMBER // 整数
+%token ZERO // 0
+
+%token LPARENT // (
+%token RPARENT // )
+%token LBRACE RBRACE RBRACK LBRACK // {}, [] 
+%token SEMICOLON // ;
+%token COMMA // ,
+
+%left ASSIGN // 赋值 =
+%left NEQ EQL // 等，不等 == !=
+%left LSS GRE LEQ GEQ // 比较 < > <= >=
+%left ADD SUB // 加减 + -
+%left MUL DIV // 乘除 * /
+
+%start program
+%%
+
+/* 语法规则 */
+
+add_cal
+    : ADD
+    | SUB
+    ;
+
+mul_cal
+    : MUL
+    | DIV
+    ;
+
+relation_cal
+    : NEQ
+    | EQL
+    | LSS
+    | GRE
+    | LEQ
+    | GEQ
+    ;
+
+character
+    : CHARACTER
+    ;
+
+
+string
+    : STR				{ fprintf(yyout, "<字符串>\n"); }
+    ;
+
+program
+    : const_declaration	variable_declaration function main { fprintf(yyout, "<程序>\n"); }
+    ;
+
+
+const_declaration
+    : CONST const_definition SEMICOLON   { fprintf(yyout, "<常量说明>\n"); }
+    |
+    ;
+
+const_definition
+    : const_definition SEMICOLON CONST INT const_assign_int 
+    | INT const_assign_int	{ fprintf(yyout, "<常量定义>\n"); }
+    | const_definition SEMICOLON CONST CHAR const_assign_char 
+    | CHAR const_assign_char	{ fprintf(yyout, "<常量定义>\n"); }
+    ;
+
+const_assign_int
+    : const_assign_int COMMA ID ASSIGN number
+    | ID ASSIGN number
+    ;
+
+const_assign_char
+    : const_assign_char COMMA ID ASSIGN character
+    | ID ASSIGN character
+    ;
+
+
+unsigned_number
+    : NUMBER			{ fprintf(yyout, "<无符号整数>\n"); }
+    | ZERO			{ fprintf(yyout, "<无符号整数>\n"); }	
+    ;
+
+number
+    : unsigned_number
+    | ADD unsigned_number	{ fprintf(yyout, "<整数>\n"); }
+    | SUB unsigned_number	{ fprintf(yyout, "<整数>\n"); }
+    ;
+
+function_declaration_head
+    : INT ID				{ fprintf(yyout, "<声明头部>\n"); }
+    | CHAR ID				{ fprintf(yyout, "<声明头部>\n"); }
+    ;
+
+variable_declaration
+    : variable_declaration variable_definition SEMICOLON   { fprintf(yyout, "<变量说明>\n"); }
+    |
+    ;
+
+variable_definition 
+    : type variable_assign		{ fprintf(yyout, "<变量定义>\n"); }
+    ;
+
+variable_assign
+    : variable_assign COMMA assign_item
+    | assign_item
+    ;
+
+assign_item
+    : ID
+    | ID LBRACK unsigned_number RBRACK
+    ;
+
+type
+    : INT
+    | CHAR
+    ;
+
+function
+    : function function_with_return	
+    | function function_without_return
+    |
+    ;
+
+function_with_return
+    : function_declaration_head LPARENT param_list RPARENT LBRACE complex_sentence RBRACE { fprintf(yyout, "<有返回值函数定义>\n"); }
+    ;
+
+function_without_return
+    : VOID ID LPARENT param_list RPARENT LBRACE complex_sentence RBRACE { fprintf(yyout, "<无返回值函数定义>\n"); }
+    ;
+
+complex_sentence
+    : const_declaration variable_declaration sentence_list    { fprintf(yyout, "<复合语句>\n"); }
+    ;
+
+param_list
+    : type param		    { fprintf(yyout, "<参数表>\n"); }
+    |
+    ;	
+
+param
+    : ID
+    | param COMMA type ID
+    ;
+
+main
+    : VOID MAIN LPARENT RPARENT LBRACE complex_sentence RBRACE { fprintf(yyout, "<主函数>\n"); }
+    ;
+
+
+expression
+    : expression add_cal item	{ fprintf(yyout, "<表达式>\n"); }
+    | add_cal item		{ fprintf(yyout, "<因子>\n"); }
+    | item			{ fprintf(yyout, "<因子>\n"); }
+    ;
+
+item
+    : fact				{ fprintf(yyout, "<因子>\n"); }
+    | item mul_cal fact			{ fprintf(yyout, "<项>\n"); }
+    ;
+
+fact
+    : ID				{ /*fprintf(yyout, "<标识符>");*/ }
+    | ID LBRACK expression RBRACK	{ fprintf(yyout, "<表达式>\n"); }
+    | LPARENT expression RPARENT	{ fprintf(yyout, "<表达式>\n"); }
+    | number				{ fprintf(yyout, "<整数>\n"); }
+    | character				{ /*fprintf(yyout, "<字符>");*/ }
+    | call_with_return			{ fprintf(yyout, "<有返回值函数调用语句>\n"); }
+    ;
+
+sentence
+    : condition_sentence		{ fprintf(yyout, "<条件语句>\n"); }
+    | circle_sentence			{ fprintf(yyout, "<循环语句>\n"); }
+    | LBRACE sentence_list RBRACE	{ fprintf(yyout, "<语句列>\n"); }
+    | call_with_return SEMICOLON	{ fprintf(yyout, "<有返回值函数调用语句>\n"); }
+    | call_without_return SEMICOLON	{ fprintf(yyout, "<无返回值函数调用语句>\n"); }
+    | assign_sentence SEMICOLON		{ fprintf(yyout, "<赋值语句>\n"); }
+    | read_sentence SEMICOLON		{ fprintf(yyout, "<读语句>\n"); }
+    | write_sentence SEMICOLON		{ fprintf(yyout, "<写语句>\n"); }
+    | SEMICOLON
+    | return_sentence			{ fprintf(yyout, "<返回语句>\n"); }
+    ;
+
+assign_sentence
+    : ID ASSIGN expression
+    | ID LBRACK expression RBRACK ASSIGN expression
+    ;
+
+condition_sentence
+    : IF LPARENT condition RPARENT sentence { fprintf(yyout, "<条件>\n"); }
+    | IF LPARENT condition RPARENT sentence ELSE sentence { fprintf(yyout, "<条件>\n"); }
+    ;
+
+condition
+    : expression relation_cal expression
+    | expression			{ fprintf(yyout, "<表达式>\n"); }
+    ;
+
+circle_sentence
+    : WHILE LPARENT condition RPARENT sentence
+    | DO sentence WHILE LPARENT condition RPARENT
+    | FOR LPARENT ID ASSIGN expression SEMICOLON condition SEMICOLON ID ASSIGN ID add_cal step RPARENT sentence
+    ;
+
+step
+    : unsigned_number
+    ;
+
+call_with_return
+    : ID LPARENT value_param_list RPARENT { fprintf(yyout, "<值参数表>\n"); }
+    ;
+
+call_without_return
+    : ID LPARENT value_param_list RPARENT { fprintf(yyout, "<值参数表>\n"); }
+    ;
+
+value_param_list
+    : table
+    |
+    ;
+
+table
+    : expression
+    | table COMMA expression
+    ;
+
+sentence_list
+    : sentence_list sentence
+    |
+    ;
+
+read_sentence
+    : SCAN LPARENT id_list RPARENT
+    ;
+
+id_list
+    : ID
+    | id_list COMMA ID
+    ;
+
+write_sentence
+    : PRINT LPARENT string COMMA expression RPARENT
+    | PRINT LPARENT string RPARENT
+    | PRINT LPARENT expression RPARENT
+    ;
+
+return_sentence
+    : RETURN
+    | RETURN LPARENT expression RPARENT
+    ;
+
+%%
+
+int main() {
+    extern FILE *yyin;
+    yyin = fopen("testfile.txt", "r");
+    extern FILE *yyout;
+    yyout = fopen("output.txt", "w");
+    while(yyparse()){}
+    return 0;
+}

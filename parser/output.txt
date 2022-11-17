@@ -1,0 +1,18 @@
+CONSTTK const
+INTTK int
+IDENFR const1
+ASSIGN =
+INTCON 1
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR const2
+ASSIGN =
+MINU -
+INTCON 100
+<无符号整数>
+<整数>
+SEMICN ;
+CONSTTK const
+<常量定义>
+CHARTK char
